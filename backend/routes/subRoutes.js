@@ -31,4 +31,19 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedSub = await Subscription.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!updatedSub) {
+      return res.status(404).json({ message: "Subscription not found" });
+    }
+    res.json(updatedSub);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 export default router;

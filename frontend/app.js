@@ -27,6 +27,8 @@ function displaySubs(subs) {
     });
     const glowColor = categoryColors[sub.category] || "rgba(99, 102, 241, 0.4)";
 
+    const subJsonString = JSON.stringify(sub).replace(/'/g, "&apos;");
+
     subList.innerHTML += `
             <div class="group flex items-center justify-between p-6 rounded-3xl glass-card hover:bg-white/[0.04] transition-all duration-500"
                  style="--hover-glow: ${glowColor}">
@@ -60,11 +62,16 @@ function displaySubs(subs) {
                     <span class="text-xl font-bold text-white tracking-tighter">$${sub.price.toFixed(
                       2
                     )}</span>
-                    <button onclick="deleteSub('${
-                      sub._id
-                    }')" class="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-red-400 transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                    <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick='openEditModal(${subJsonString})' class="p-2 text-slate-600 hover:text-blue-400 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 5.232z"></path></svg>
+                        </button>
+                        <button onclick="deleteSub('${
+                          sub._id
+                        }')" class="p-2 text-slate-600 hover:text-red-400 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>`;
   });
@@ -79,6 +86,55 @@ async function deleteSub(id) {
     console.error("Error deleting sub:", error);
   }
 }
+
+function openEditModal(sub) {
+    document.getElementById('edit-id').value = sub._id;
+    document.getElementById('edit-name').value = sub.name;
+    document.getElementById('edit-category').value = sub.category;
+    document.getElementById('edit-price').value = sub.price;
+    document.getElementById('edit-renewalDate').value = new Date(sub.renewalDate).toISOString().split('T')[0];
+
+    const container = document.getElementById('edit-form-container');
+    container.classList.remove('hidden');
+    container.classList.add('flex');
+}
+
+function closeEditModal() {
+    const container = document.getElementById('edit-form-container');
+    container.classList.add('hidden');
+    container.classList.remove('flex');
+}
+
+document.getElementById('edit-sub-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-id').value;
+    const updatedSub = {
+        name: document.getElementById('edit-name').value,
+        category: document.getElementById('edit-category').value,
+        price: parseFloat(document.getElementById('edit-price').value),
+        renewalDate: document.getElementById('edit-renewalDate').value,
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedSub),
+        });
+
+        if (response.ok) {
+            fetchSubscriptions();
+            closeEditModal();
+        } else {
+            const error = await response.json();
+            console.error('Error updating subscription:', error.message);
+            alert(`Error updating subscription: ${error.message}`);
+        }
+    } catch (error) {
+        console.error('Error updating subscription:', error);
+        alert('An error occurred while updating the subscription.');
+    }
+});
 
 document.getElementById("sub-form").addEventListener("submit", async (e) => {
   e.preventDefault();
